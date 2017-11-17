@@ -42,6 +42,9 @@ MainWindow::MainWindow(QWidget *parent) :
         exit(1);
     }
     connect(sock, SIGNAL(readyRead()), this, SLOT(gotUpdate()));
+	
+    //setDRef(sock, "oaacars/connected", 0);
+    //setDRef(sock, "oaacars/tracking", 0);
 
     state = OFFLINE;
     startFuel = 0.0f;
@@ -64,29 +67,6 @@ MainWindow::~MainWindow()
     delete sock;
     delete ui;
 }
-
-void MainWindow::remindOf(QString reason)
-{
-    if(reason=="Flight not started")
-    {
-        //--- MessageBox
-        //QMessageBox::critical(this, "Flight Tracking", "\nStarting up the engines already ... ?\n\nYou should also start the flight tracking now!\n", QMessageBox::Ok);
-
-        //--- get window to the foreground
-        setWindowState( (windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
-        raise();  // for MacOS
-        activateWindow(); // for Windows
-
-        //--- play sound using MediaPlayer
-        //QMediaPlayer *player = new QMediaPlayer;
-        //player->setMedia(QUrl::fromLocalFile("sounds//57806__guitarguy1985__aircraftalarm.wav"));
-        //player->play();
-
-        //--- play sound using Qsound
-        //QSound::play("sounds/57806__guitarguy1985__aircraftalarm.wav");
-    }
-}
-
 
 void MainWindow::on_connectButton_clicked()
 {
@@ -268,6 +248,7 @@ void MainWindow::on_startButton_clicked()
 
     if (ui->applyWeight->isChecked()) {
         float totalWeight = ui->pax->text().toFloat() * 80.0 + ui->cargo->text().toFloat();
+		qDebug("Weight: %f",totalWeight);
         setDRef(sock, "sim/flightmodel/weight/m_fixed", totalWeight);
     }
 
@@ -287,7 +268,6 @@ void MainWindow::on_startButton_clicked()
     mistakes.reset();
 
     newEvent("FLIGHT STARTED");
-    setDRef(sock, "oaacars/tracking", 1);
 
     sendUpdate();
     timer.start(60000);
@@ -395,7 +375,6 @@ void MainWindow::on_endButton_clicked()
     va.sendEvents();
     va.sendTracks();
 
-    setDRef(sock, "oaacars/tracking", 0);
     state = OFFLINE;
     startFuel = 0.0f;
     startTime = 0;

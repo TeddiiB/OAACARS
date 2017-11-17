@@ -36,6 +36,7 @@ void sendDRef(QUdpSocket* sock, const char* name, qint32 id, qint32 freq) {
     sock->writeDatagram(buffer, 413, addr, 49000);
 }
 
+
 void setDRef(QUdpSocket* sock, const char* name, float val) {
     QHostAddress addr("127.0.0.1");
     char buffer[1024];
@@ -43,7 +44,10 @@ void setDRef(QUdpSocket* sock, const char* name, float val) {
     memset(buffer, 0, 1024);
     char* pos = buffer;
     memcat(&pos, "DREF", 5);
-    memcat(&pos, val);
+    //memcat(&pos, val);
+	//qToBigEndian(val, pos);
+	qToLittleEndian(val, pos);
+    pos+=4;
     memcat(&pos, name);
     sock->writeDatagram(buffer, 509, addr, 49000);
 }

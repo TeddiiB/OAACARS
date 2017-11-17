@@ -2,8 +2,6 @@
 #include "ui_mainwindow.h"
 #include <QMessageBox>
 
-bool enginesRunning=false, enginesRunningMkr=false;
-
 void MainWindow::gotUpdate() {
     static float prevOverspeed = 0.0, prevStall = 0.0;
     static bool isPaused = false;
@@ -125,8 +123,6 @@ void MainWindow::gotUpdate() {
                 case 45: // FF
                     for (int x = 0; x < 8; x++)
                     {
-                        //update state for change detection
-                        enginesRunning|=(val[x] != 0.0);
                         //update cur.engine values for inFlight events, if out of preflight
                         if (state >= PREFLIGHT)
                         {
@@ -134,17 +130,6 @@ void MainWindow::gotUpdate() {
                             else if ((val[x] == 0.0) && cur.engine[x]) engineStop(x);
                         }
                     }
-
-                    //evaluation of change detection for "flight not started" reminder
-                    if(enginesRunning==true && enginesRunningMkr==false)
-                    {
-                        if(state <= PREFLIGHT)
-                        {
-                            remindOf("Flight not started");
-                        }
-                    }
-                    enginesRunningMkr=enginesRunning;
-
                     break;
 
                 case 63: // payload weights and CG
@@ -287,6 +272,7 @@ void MainWindow::updateDone() {
 
 void MainWindow::uiUpdate() {
     static qint32 simCon = 0;
+	static uint16_t trackingCount = 0;
     qint64 tnow = time(NULL);
 
     if (cur.time < tnow - 5 && cur.rref < tnow - 5) {
@@ -294,24 +280,25 @@ void MainWindow::uiUpdate() {
         if (simCon != 0) {
             ui->conSim->setStyleSheet("QPushButton { color: rgb(255,0,0); }");
             simCon = 0;
-            setDRef(sock, "oaacars/connected", 0);
         }
     } else if (cur.time < tnow - 5 || cur.rref < tnow - 5) {
         // Partly connected
         if (simCon != 1) {
             ui->conSim->setStyleSheet("QPushButton { color: rgb(255,255,0); }");
             simCon = 1;
-            setDRef(sock, "oaacars/connected", 0);
         }
     } else {
         // Connected
         if (simCon != 2) {
             ui->conSim->setStyleSheet("QPushButton { color: rgb(0,255,0); }");
             simCon = 2;
-            setDRef(sock, "oaacars/connected", cur.realTime);
         }
     }
-
+    setDRef(sock, "oaacars/connected", simCon);
+	trackingCount++;
+	if(timer.isActive()==false)
+		trackingCount=0;
+	setDRef(sock, "oaacars/tracking", trackingCount);
 
     ui->ias->setText(QString::number(cur.ias, 'f', 1)+" kt");
     ui->gs->setText(QString::number(cur.gs, 'f', 1)+" kt");
